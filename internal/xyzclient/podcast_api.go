@@ -39,9 +39,9 @@ func GetPodcastDetailsByID(podcastID string) (*PodcastDetailData, error) {
 	isoTime := now.Format(time.RFC3339)
 
 	req.Header.Set("Host", "api.xiaoyuzhoufm.com")
-	req.Header.Set("User-Agent", "Xiaoyuzhou/2.57.1 (build:1576; iOS 17.4.1)")
+	req.Header.Set("User-Agent", constants.XiaoyuzhouUserAgent)
 	req.Header.Set("Market", "AppStore")
-	req.Header.Set("App-BuildNo", "1576")
+	req.Header.Set("App-BuildNo", constants.XiaoyuzhouAppBuildNo)
 	req.Header.Set("OS", "ios")
 	req.Header.Set("x-jike-access-token", accessToken)
 	req.Header.Set("x-jike-device-id", constants.FixedDeviceID)
@@ -53,7 +53,7 @@ func GetPodcastDetailsByID(podcastID string) (*PodcastDetailData, error) {
 	req.Header.Set("Model", "iPhone14,2")
 	req.Header.Set("app-permissions", "4")
 	req.Header.Set("Accept", "*/*")
-	req.Header.Set("App-Version", "2.57.1")
+	req.Header.Set("App-Version", constants.XiaoyuzhouAppVersion)
 	req.Header.Set("WifiConnected", "true")
 	req.Header.Set("OS-Version", "17.4.1")
 	req.Header.Set("x-custom-xiaoyuzhou-app-dev", "")
@@ -121,9 +121,9 @@ func ListPodcastEpisodes(requestData EpisodeListRequest) (*EpisodeListResponseDa
 	isoTime := now.Format(time.RFC3339)
 
 	req.Header.Set("Host", "api.xiaoyuzhoufm.com")
-	req.Header.Set("User-Agent", "Xiaoyuzhou/2.57.1 (build:1576; iOS 17.4.1)")
+	req.Header.Set("User-Agent", constants.XiaoyuzhouUserAgent)
 	req.Header.Set("Market", "AppStore")
-	req.Header.Set("App-BuildNo", "1576")
+	req.Header.Set("App-BuildNo", constants.XiaoyuzhouAppBuildNo)
 	req.Header.Set("OS", "ios")
 	req.Header.Set("x-jike-access-token", accessToken)
 	req.Header.Set("x-jike-device-id", constants.FixedDeviceID)
@@ -136,7 +136,7 @@ func ListPodcastEpisodes(requestData EpisodeListRequest) (*EpisodeListResponseDa
 	req.Header.Set("app-permissions", "4")
 	req.Header.Set("Accept", "application/json")       // Specify JSON acceptance
 	req.Header.Set("Content-Type", "application/json") // Specify JSON content type
-	req.Header.Set("App-Version", "2.57.1")
+	req.Header.Set("App-Version", constants.XiaoyuzhouAppVersion)
 	req.Header.Set("WifiConnected", "true")
 	req.Header.Set("OS-Version", "17.4.1")
 	req.Header.Set("x-custom-xiaoyuzhou-app-dev", "")
@@ -197,9 +197,9 @@ func GetEpisodeDetailsByID(episodeID string) (*Episode, error) {
 	isoTime := now.Format(time.RFC3339)
 
 	req.Header.Set("Host", "api.xiaoyuzhoufm.com")
-	req.Header.Set("User-Agent", "Xiaoyuzhou/2.57.1 (build:1576; iOS 17.4.1)")
+	req.Header.Set("User-Agent", constants.XiaoyuzhouUserAgent)
 	req.Header.Set("Market", "AppStore")
-	req.Header.Set("App-BuildNo", "1576")
+	req.Header.Set("App-BuildNo", constants.XiaoyuzhouAppBuildNo)
 	req.Header.Set("OS", "ios")
 	req.Header.Set("x-jike-access-token", accessToken)
 	req.Header.Set("x-jike-device-id", constants.FixedDeviceID)
@@ -211,7 +211,7 @@ func GetEpisodeDetailsByID(episodeID string) (*Episode, error) {
 	req.Header.Set("Model", "iPhone14,2")
 	req.Header.Set("app-permissions", "4")
 	req.Header.Set("Accept", "application/json") // Prefer JSON response
-	req.Header.Set("App-Version", "2.57.1")
+	req.Header.Set("App-Version", constants.XiaoyuzhouAppVersion)
 	req.Header.Set("WifiConnected", "true")
 	req.Header.Set("OS-Version", "17.4.1")
 	req.Header.Set("x-custom-xiaoyuzhou-app-dev", "")

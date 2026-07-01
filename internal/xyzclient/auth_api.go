@@ -12,8 +12,13 @@ import (
 )
 
 // RequestVerificationCode sends a request to Xiaoyuzhou API to send a verification code.
+//
+// 该接口走创作者后台（Web 端）域名 podcaster-api.xiaoyuzhoufm.com，使用浏览器请求头。
+// App 域名 api.xiaoyuzhoufm.com 对无 token 的登录/发码接口做 App 版本强校验，
+// 旧构建号会被拒绝并返回 code 1003「请升级到最新版本后重试登录」；
+// Web 域名不做该校验，可稳定发码。换回的 token 仍可用于 App 数据接口。
 func RequestVerificationCode(areaCode, phoneNumber string) error {
-	apiURL := constants.APIBaseURL + "/v1/auth/sendCode"
+	apiURL := constants.PodcasterAPIBaseURL + "/v1/auth/send-code"
 	slog.Debug("Requesting verification code")
 
 	requestBody := sendCodeRequestBody{
@@ -30,26 +35,13 @@ func RequestVerificationCode(areaCode, phoneNumber string) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set Headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Host", "api.xiaoyuzhoufm.com")
-	req.Header.Set("User-Agent", "Xiaoyuzhou/2.57.1 (build:1576; iOS 17.4.1)")
-	req.Header.Set("Market", "AppStore")
-	req.Header.Set("App-BuildNo", "1576")
-	req.Header.Set("OS", "ios")
-	req.Header.Set("Manufacturer", "Apple")
-	req.Header.Set("BundleID", "app.podcast.cosmos")
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("abtest-info", `{"old_user_discovery_feed":"enable"}`)
-	req.Header.Set("Accept-Language", "zh-Hant-HK;q=1.0, zh-Hans-CN;q=0.9")
-	req.Header.Set("Model", "iPhone14,2")
-	req.Header.Set("app-permissions", "4")
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("App-Version", "2.57.1")
-	req.Header.Set("Accept-Encoding", "br;q=1.0, gzip;q=0.9, deflate;q=0.8")
-	req.Header.Set("WifiConnected", "true")
-	req.Header.Set("OS-Version", "17.4.1")
-	req.Header.Set("x-custom-xiaoyuzhou-app-dev", "")
+	// Set Headers (创作者后台 Web 接口：浏览器头，不带 App 版本号)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
+	req.Header.Set("Origin", constants.PodcasterOrigin)
+	req.Header.Set("Referer", constants.PodcasterOrigin+"/")
+	req.Header.Set("User-Agent", constants.WebUserAgent)
 
 	slog.Debug("Sending HTTP request to sendCode API", "headers", req.Header, "body", string(jsonBody))
 	resp, err := GetHTTPClient().Do(req)
@@ -78,8 +70,12 @@ func RequestVerificationCode(areaCode, phoneNumber string) error {
 
 // LoginWithCode sends the area code, phone number, and verification code to Xiaoyuzhou API to log in.
 // It returns the access token, refresh token, UID, and nickname upon success.
+//
+// 与发码一致，走创作者后台（Web 端）域名 podcaster-api.xiaoyuzhoufm.com 绕开 App 版本校验。
+// 登录成功后 token 仍在响应头 x-jike-access-token / x-jike-refresh-token 中返回，
+// 这些 token 可继续用于 App 数据接口 api.xiaoyuzhoufm.com。
 func LoginWithCode(areaCode, phoneNumber, code string) (accessToken, refreshToken, uid, nickname string, err error) {
-	apiURL := constants.APIBaseURL + "/v1/auth/loginOrSignUpWithSMS"
+	apiURL := constants.PodcasterAPIBaseURL + "/v1/auth/login-with-sms"
 	slog.Debug("Attempting to login with code")
 
 	requestBody := loginOrSignUpWithSMSRequestBody{
@@ -97,22 +93,13 @@ func LoginWithCode(areaCode, phoneNumber, code string) (accessToken, refreshToke
 		return "", "", "", "", fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set Headers
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Host", "api.xiaoyuzhoufm.com")
-	req.Header.Set("User-Agent", "Xiaoyuzhou/2.57.1 (build:1576; iOS 17.4.1)")
-	req.Header.Set("App-BuildNo", "1576")
-	req.Header.Set("OS", "ios")
-	req.Header.Set("Manufacturer", "Apple")
-	req.Header.Set("BundleID", "app.podcast.cosmos")
-	req.Header.Set("abtest-info", `{"old_user_discovery_feed":"enable"}`)
-	req.Header.Set("Accept-Language", "zh-Hant-HK;q=1.0, zh-Hans-CN;q=0.9")
-	req.Header.Set("Model", "iPhone14,2")
-	req.Header.Set("app-permissions", "4")
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("App-Version", "2.57.1")
-	req.Header.Set("WifiConnected", "true")
-	req.Header.Set("OS-Version", "17.4.1")
+	// Set Headers (创作者后台 Web 接口：浏览器头，不带 App 版本号)
+	req.Header.Set("Content-Type", "application/json;charset=UTF-8")
+	req.Header.Set("Accept", "application/json, text/plain, */*")
+	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6")
+	req.Header.Set("Origin", constants.PodcasterOrigin)
+	req.Header.Set("Referer", constants.PodcasterOrigin+"/")
+	req.Header.Set("User-Agent", constants.WebUserAgent)
 
 	slog.Debug("Sending HTTP request to login API", "headers", req.Header, "body", string(jsonBody))
 	resp, err := GetHTTPClient().Do(req)
@@ -169,10 +156,10 @@ func PerformTokenRefresh(currentRefreshToken string) (newAccessToken, newRefresh
 	// Set Headers
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
 	req.Header.Set("Host", "api.xiaoyuzhoufm.com")
-	req.Header.Set("User-Agent", "Xiaoyuzhou/2.57.1 (build:1576; iOS 17.4.1)")
+	req.Header.Set("User-Agent", constants.XiaoyuzhouUserAgent)
 	req.Header.Set("x-jike-refresh-token", currentRefreshToken)
 	req.Header.Set("Market", "AppStore")
-	req.Header.Set("App-BuildNo", "1576")
+	req.Header.Set("App-BuildNo", constants.XiaoyuzhouAppBuildNo)
 	req.Header.Set("OS", "ios")
 	req.Header.Set("Manufacturer", "Apple")
 	req.Header.Set("BundleID", "app.podcast.cosmos")
@@ -181,7 +168,7 @@ func PerformTokenRefresh(currentRefreshToken string) (newAccessToken, newRefresh
 	req.Header.Set("Model", "iPhone14,2")
 	req.Header.Set("app-permissions", "4")
 	req.Header.Set("Accept", "*/*")
-	req.Header.Set("App-Version", "2.57.1")
+	req.Header.Set("App-Version", constants.XiaoyuzhouAppVersion)
 	req.Header.Set("WifiConnected", "true")
 	req.Header.Set("OS-Version", "17.4.1")
 	req.Header.Set("x-custom-xiaoyuzhou-app-dev", "")
