@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -44,6 +45,11 @@ func main() {
 		}
 		interactiveLogin(tm) // Call the new combined interactiveLogin function
 		slog.Debug("Initialization complete. Token saved. Exiting.")
+		os.Exit(0)
+	} else if len(os.Args) > 1 && os.Args[1] == "cli" {
+		// CLI 兼容层：供 Skill / 命令行直接调用，复用同一套鉴权与 client。
+		slog.Debug("Running in CLI mode.")
+		runCLI(os.Args[2:])
 		os.Exit(0)
 	} else {
 		// Default server mode
@@ -86,9 +92,17 @@ func interactiveLogin(tm *xyzclient.TokenManager) {
 	var areaCode string
 	for {
 		fmt.Printf("Enter your area code (e.g., +86, press Enter for default %s): ", defaultAreaCode)
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			fmt.Printf("Error reading input: %v\n", err)
+			os.Exit(1)
+		}
 		areaCode = strings.TrimSpace(input)
 		if areaCode == "" {
+			if errors.Is(err, io.EOF) {
+				fmt.Println("No input received. Exiting.")
+				os.Exit(1)
+			}
 			areaCode = defaultAreaCode
 		}
 		if isValidAreaCode(areaCode) {
@@ -101,8 +115,16 @@ func interactiveLogin(tm *xyzclient.TokenManager) {
 	var phoneNumber string
 	for {
 		fmt.Print("Enter your phone number (digits only): ")
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			fmt.Printf("Error reading input: %v\n", err)
+			os.Exit(1)
+		}
 		phoneNumber = strings.TrimSpace(input)
+		if errors.Is(err, io.EOF) && phoneNumber == "" {
+			fmt.Println("No input received. Exiting.")
+			os.Exit(1)
+		}
 		if isValidPhoneNumber(phoneNumber) {
 			break
 		}
@@ -124,8 +146,16 @@ func interactiveLogin(tm *xyzclient.TokenManager) {
 	loginSuccessful := false
 	for loginAttempts < maxVerificationAttempts {
 		fmt.Printf("Enter the 4-digit verification code (attempt %d/%d): ", loginAttempts+1, maxVerificationAttempts)
-		input, _ := reader.ReadString('\n')
+		input, err := reader.ReadString('\n')
+		if err != nil && !errors.Is(err, io.EOF) {
+			fmt.Printf("Error reading input: %v\n", err)
+			os.Exit(1)
+		}
 		verificationCode = strings.TrimSpace(input)
+		if errors.Is(err, io.EOF) && verificationCode == "" {
+			fmt.Println("No input received. Exiting.")
+			os.Exit(1)
+		}
 
 		if !isValidVerificationCode(verificationCode) {
 			slog.Warn("Invalid verification code format. It must be 4 digits.", "input", verificationCode)

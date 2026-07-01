@@ -1,3 +1,18 @@
+# IDE
 .idea
+
+# Go 编译产物
 *.exe
 *.exe~
+# 与模块同名的可执行文件（go build 默认输出）
+/xiaoyuzhoufm-mcp
+*.test
+*.out
+# 编译输出目录（install.sh 用不到，本地 go build -o bin/ 时的产物）
+/bin/
+
+# 下载的媒体文件
+*.m4a
+*.mp3
+*.wav
+*.aac

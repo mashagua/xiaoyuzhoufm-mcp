@@ -2,6 +2,12 @@
 
 本项目用 Go 语言实现了一个 MCP (Model Context Protocol) 服务器，用于与小宇宙FM 的 API 进行交互。它允许大语言模型 (LLM) 通过 MCP 工具访问小宇宙播客的信息。
 
+同一个二进制还提供两种额外用法：
+- **CLI 模式**（`xiaoyuzhoufm-mcp cli <子命令>`）：命令行直接查询，结果为 JSON。
+- **Claude Code Skill**：随仓库附带 `skill/xiaoyuzhoufm/`，配合 CLI 模式使用。
+
+三种模式（MCP server / CLI / init 登录）共用同一套鉴权与底层 client。设计与实现思路见 [`docs/mcp-to-skill.md`](docs/mcp-to-skill.md)。
+
 ## 主要功能
 
 *   **交互式登录**: 首次使用时通过手机号和验证码登录小宇宙账户获取 token。
@@ -24,28 +30,29 @@ git clone https://github.com/MosesHe/xiaoyuzhoufm-mcp.git
 cd xiaoyuzhoufm-mcp
 ```
 
-### 2. 构建
+### 2. 一键安装（推荐，macOS / Linux）
 
 ```bash
-go build -o xiaoyuzhoufm-mcp.exe cmd/xiaoyuzhoufm-mcp/main.go
+./install.sh
 ```
-或者简单地：
-```bash
-go build ./cmd/xiaoyuzhoufm-mcp/...
-```
-这会在项目根目录下生成 `xiaoyuzhoufm-mcp.exe` (Windows) 或 `xiaoyuzhoufm-mcp` (Linux/macOS) 可执行文件。
 
-### 3. 初始化（登录）
+脚本会自动完成：
+1. 编译二进制到 `~/.local/bin/xiaoyuzhoufm-mcp`（若 `~/.local/bin` 不在 PATH 会给出提示）。
+2. 把 Skill 安装到 `~/.claude/skills/xiaoyuzhoufm/`（供 Claude Code 使用；不用可忽略）。
 
-首次使用时，需要通过以下命令进行登录认证：
+安装位置可用环境变量覆盖：`BIN_DIR=/usr/local/bin SKILL_DST=... ./install.sh`。
+
+> 手动编译（或 Windows）：`go build -o xiaoyuzhoufm-mcp ./cmd/xiaoyuzhoufm-mcp`
+> 会在当前目录生成可执行文件（Windows 为 `xiaoyuzhoufm-mcp.exe`）。
+
+### 3. 初始化（登录，首次必做）
+
+每个人需用自己的小宇宙账号登录一次：
 
 ```bash
-./xiaoyuzhoufm-mcp.exe init
+xiaoyuzhoufm-mcp init
 ```
-或者在 Linux/macOS 上：
-```bash
-./xiaoyuzhoufm-mcp init
-```
+（未装入 PATH 时用 `./xiaoyuzhoufm-mcp init`；Windows 为 `.\xiaoyuzhoufm-mcp.exe init`。）
 
 初始化过程将引导您：
 1. 输入区号（默认 +86）
@@ -53,6 +60,19 @@ go build ./cmd/xiaoyuzhoufm-mcp/...
 3. 输入接收到的 4 位验证码
 
 成功登录后，认证令牌将保存在用户主目录下的 `~/.mcp/xiaoyuzhoufm-mcp/token.json` 文件中。
+
+### 3b. CLI / Skill 用法
+
+登录后即可直接命令行查询（结果为 JSON，`--brief` 精简字段）：
+
+```bash
+xiaoyuzhoufm-mcp cli search-podcast --keyword "纵横四海" --brief
+xiaoyuzhoufm-mcp cli podcast-detail --pid "62694abdb221dd5908417d1e"
+```
+
+子命令：`search-podcast` / `search-episode` / `search-user` / `podcast-detail` /
+`episode-detail` / `list-episodes` / `user-profile` / `user-stats`。
+在 Claude Code 中，装好 Skill 后直接用自然语言提问（如“查纵横四海的订阅数”）即可自动调用。
 
 ### 4. 使用服务器（以Cherry Studio为例）
 
@@ -91,7 +111,13 @@ go build ./cmd/xiaoyuzhoufm-mcp/...
 ```
 .
 ├── cmd/xiaoyuzhoufm-mcp/
-│   └── main.go                 # 主应用程序入口点
+│   ├── main.go                 # 主入口：init / cli / MCP server 三种模式分发
+│   └── cli.go                  # CLI 子命令层（薄封装 xyzclient，输出 JSON）
+├── skill/xiaoyuzhoufm/
+│   └── SKILL.md                # Claude Code Skill 模板（安装脚本会复制到 ~/.claude/skills/）
+├── docs/
+│   └── mcp-to-skill.md         # MCP 改造为 Skill 的设计文档
+├── install.sh                  # 一键安装：编译到 PATH + 安装 Skill
 ├── internal/
 │   ├── constants/
 │   │   └── constants.go        # 定义项目中使用的常量 (如 API Base URL)
